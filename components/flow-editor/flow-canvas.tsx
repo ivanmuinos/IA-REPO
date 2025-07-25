@@ -52,9 +52,7 @@ const isValidStartNode = (node) => {
 }
 
 // Componente interno que usa los hooks de React Flow
-const Flow = () => {
-  const params = useParams()
-  const flowId = params.id as string
+const Flow = ({ flowId }: { flowId: string }) => {
   const reactFlowWrapper = useRef(null)
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
@@ -202,10 +200,10 @@ const Flow = () => {
 }
 
 // Componente principal que envuelve el componente interno con ReactFlowProvider
-export const FlowCanvas = () => {
+export const FlowCanvas = ({ flowId }: { flowId: string }) => {
   return (
     <ReactFlowProvider>
-      <Flow />
+      <Flow flowId={flowId} />
     </ReactFlowProvider>
   )
 }

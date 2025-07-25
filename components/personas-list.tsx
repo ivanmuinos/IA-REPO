@@ -37,7 +37,7 @@ export function PersonasList({ filtro }: PersonasListProps) {
       const data = await PersonasService.getAllPersonas()
       setPersonas(data)
 
-      console.log(`Loaded ${data.length} validated personas`)
+      // console.log(`Loaded ${data.length} validated personas`)
     } catch (error) {
       toast({
         title: "Error",
@@ -263,7 +263,7 @@ export function PersonasList({ filtro }: PersonasListProps) {
                     className="hover:bg-muted/30 transition-colors"
                     onClick={() => {
                       // Log click for debugging
-                      console.log(`Clicked persona: ID ${persona.id}, Name: ${persona.nombre}`)
+                      // console.log(`Clicked persona: ID ${persona.id}, Name: ${persona.nombre}`)
                     }}
                   >
                     <TableCell>
@@ -290,7 +290,7 @@ export function PersonasList({ filtro }: PersonasListProps) {
                             })
                             return
                           }
-                          console.log(`Navigating to persona: ID ${persona.id}, Name: ${persona.nombre}`)
+                          // console.log(`Navigating to persona: ID ${persona.id}, Name: ${persona.nombre}`)
                         }}
                       >
                         {persona.nombre}

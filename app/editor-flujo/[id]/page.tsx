@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, use } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Eye, Palette, Play, Save, Shield, Users, AlertTriangle } from "lucide-react"
@@ -21,7 +21,8 @@ import type { FlowNode, FlowConnection, FlowValidationError } from "@/types/flow
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { suppressResizeObserverLoopError } from "@/lib/resize-observer-polyfill"
 
-export default function EditorFlujoPage({ params }: { params: { id: string } }) {
+export default function EditorFlujoPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const { toast } = useToast()
   const router = useRouter()
   const [brandingModalOpen, setBrandingModalOpen] = useState(false)
@@ -57,7 +58,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
     const loadFlow = async () => {
       try {
         // Obtener los datos del flujo
-        const flow = await clientFlowService.getFlowById(params.id)
+        const flow = await clientFlowService.getFlowById(id)
         setFlowData(flow)
         setFlowName(flow.name)
 
@@ -68,7 +69,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
         }
 
         // Obtener los pasos del flujo
-        const flowSteps = await clientFlowService.getFlowSteps(params.id)
+        const flowSteps = await clientFlowService.getFlowSteps(id)
 
         // Ensure nodes have valid positions
         const validatedNodes = flowSteps.nodes.map((node) => ({
@@ -99,7 +100,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
     }
 
     loadFlow()
-  }, [params.id, isInitialized])
+  }, [id, isInitialized])
 
   // Marcar cambios sin guardar cuando se modifican nodos o conexiones
   useEffect(() => {
@@ -216,13 +217,13 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
     if (validateFlow()) {
       try {
         // Actualizar el flujo
-        await clientFlowService.updateFlow(params.id, {
+        await clientFlowService.updateFlow(id, {
           name: flowName,
           last_edited: new Date().toISOString(),
         })
 
         // Guardar los pasos del flujo
-        await clientFlowService.saveFlowSteps(params.id, { nodes, connections })
+        await clientFlowService.saveFlowSteps(id, { nodes, connections })
 
         toast({
           title: "Flujo guardado",
@@ -266,7 +267,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
     if (validateFlow()) {
       try {
         // Actualizar el estado del flujo a activo
-        await clientFlowService.updateFlow(params.id, {
+        await clientFlowService.updateFlow(id, {
           status: "active",
           last_edited: new Date().toISOString(),
         })
@@ -347,7 +348,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
           <h2 className="text-xl font-semibold mb-2 mt-4">Cargando flujo...</h2>
-          <p className="text-muted-foreground">Preparando el editor para {params.id}</p>
+          <p className="text-muted-foreground">Preparando el editor para {id}</p>
         </div>
       </main>
     )
@@ -381,7 +382,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <FlowThemeProvider flowId={params.id}>
+    <FlowThemeProvider flowId={id}>
       <main className="h-screen flex flex-col">
         <FlowThemeApplier>
           {flowState === "archived" && (
@@ -545,7 +546,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
                 <pre className="bg-muted p-4 rounded-lg text-sm">
                   {JSON.stringify(
                     {
-                      id: params.id,
+                      id: id,
                       name: flowName,
                       nodes,
                       connections,
@@ -558,7 +559,7 @@ export default function EditorFlujoPage({ params }: { params: { id: string } }) 
             </Tabs>
           </div>
 
-          <BrandingModal open={brandingModalOpen} onOpenChange={setBrandingModalOpen} flowId={params.id} />
+          <BrandingModal open={brandingModalOpen} onOpenChange={setBrandingModalOpen} flowId={id} />
           <PersonasModal open={personasModalOpen} onOpenChange={setPersonasModalOpen} />
           <RegulatoryModal
             open={regulatoryModalOpen}

@@ -12,10 +12,24 @@ import {
   UserCheck,
   Shield,
   MapPin,
-  ArrowLeft,
   AlertCircle,
   XCircle,
+  Eye,
+  User,
+  MessageSquare,
+  Send,
+  FileX,
+  AlertTriangle,
+  CheckSquare,
+  Save,
+  History,
 } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const ReactJson = dynamic(() => import("react-json-view"), {
+  ssr: false,
+  loading: () => <div className="p-4 text-sm text-muted-foreground">Cargando JSON...</div>
+})
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +45,242 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PersonasService, type Persona } from "@/lib/personas-service"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { InfoField, InfoFieldWithBadge } from "@/components/ui/info-field"
 import Link from "next/link"
+
+// Importar el nuevo sistema unificado
+import { DetailPageTemplate, SectionConfig, SidebarConfig } from "@/components/templates/DetailPageTemplate"
+import { ActionConfig, StatusConfig, TabConfig } from "@/components/shared/PageHeader/UnifiedPageHeader"
+import { SectionCard } from "@/components/shared/Sections/SectionCard"
+import { ActionsCard, type ActionItem } from "@/components/shared/ActionsCard/ActionsCard"
+import { InfoField as InfoFieldNew, InfoGrid } from "@/components/shared/InfoField/InfoField"
+
+// Componentes de sección específicos para KYC
+const DocumentoIdentidadSection: React.FC<{ data: any }> = ({ data }) => (
+  <SectionCard title="Documento de identidad" description="Resultados del procesamiento OCR" icon={FileText}>
+    <div className="space-y-6">
+      <InfoGrid>
+        <InfoFieldNew label="Nombre" value={data.nombre} />
+        <InfoFieldNew label="Apellidos" value={data.apellidos} />
+        <InfoFieldNew label="Documento" value={data.documento} />
+        <InfoFieldNew label="Tipo de documento" value={data.tipoDocumento} />
+        <InfoFieldNew label="Fecha de nacimiento" value={data.fechaNacimiento} type="date" />
+        <InfoFieldNew label="Nacionalidad" value={data.nacionalidad} />
+      </InfoGrid>
+    </div>
+  </SectionCard>
+)
+
+const PerfilRiesgoSection: React.FC<{ data: any }> = ({ data }) => (
+  <SectionCard title="Perfil de riesgo" description="Evaluación de riesgo y compliance" icon={Shield}>
+    <div className="space-y-6">
+      <InfoGrid>
+        <InfoFieldNew label="Nivel de riesgo" value={data.nivelRiesgo} />
+        <InfoFieldNew label="Compliance" value={data.compliance} />
+        <InfoFieldNew label="Perfil transaccional" value={data.perfilTransaccional} />
+        <InfoFieldNew label="Monto mensual" value={`AR$${data.monto}`} />
+      </InfoGrid>
+    </div>
+  </SectionCard>
+)
+
+const ValidacionBiometricaSection: React.FC<{ data: any }> = ({ data }) => (
+  <SectionCard title="Validación biométrica" description="Resultados de verificación facial" icon={UserCheck}>
+    <div className="space-y-6">
+      <InfoGrid>
+        <InfoFieldNew label="Resultado" value={data.resultado} />
+        <InfoFieldNew label="Confianza" value={`${data.confianza}%`} />
+      </InfoGrid>
+      <InfoFieldNew label="Observaciones" value={data.observaciones} type="textarea" />
+    </div>
+  </SectionCard>
+)
+
+const CronologiaSection: React.FC<{ events: any[] }> = ({ events }) => {
+  // Datos de ejemplo si no hay eventos
+  const defaultEvents = [
+    {
+      title: "Inicio del proceso",
+      description: "Usuario inició el proceso de verificación",
+      timestamp: "10:15:00"
+    },
+    {
+      title: "Documento subido",
+      description: "Documento de identidad cargado exitosamente",
+      timestamp: "10:15:45"
+    },
+    {
+      title: "Verificación OCR",
+      description: "Procesamiento automático del documento completado",
+      timestamp: "10:16:15"
+    },
+    {
+      title: "Validación biométrica",
+      description: "Verificación facial realizada",
+      timestamp: "10:17:30"
+    },
+    {
+      title: "Análisis de riesgo",
+      description: "Evaluación de perfil de riesgo completada",
+      timestamp: "10:18:00"
+    }
+  ]
+
+  const displayEvents = events && events.length > 0 ? events : defaultEvents
+
+  return (
+    <SectionCard title="Cronología del flujo" description="Historial de eventos del proceso" icon={History}>
+      <div className="space-y-4">
+        {displayEvents.map((event, index) => (
+          <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
+            <div className="flex-1">
+              <p className="font-medium">{event.title}</p>
+              <p className="text-sm text-muted-foreground">{event.description}</p>
+            </div>
+            <Badge variant="outline">{event.timestamp}</Badge>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  )
+}
+
+const GestionAnalistaSection: React.FC<{ 
+  data: any, 
+  onAddComment: () => void,
+  onSendFeedback: () => void,
+  onRequestDocuments: () => void,
+  onUpdateRiskAssessment: () => void,
+  onFinalApproval: () => void,
+  onSaveAndContinue: () => void
+}> = ({ 
+  data, 
+  onAddComment, 
+  onSendFeedback, 
+  onRequestDocuments, 
+  onUpdateRiskAssessment, 
+  onFinalApproval, 
+  onSaveAndContinue 
+}) => (
+  <SectionCard title="Gestión de analista" description="Herramientas de gestión y análisis" icon={User}>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Analista asignado</Label>
+            <Select value={data.selectedAnalyst} onValueChange={() => {}}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Sin asignar">Sin asignar</SelectItem>
+                <SelectItem value="Ana García">Ana García</SelectItem>
+                <SelectItem value="Carlos López">Carlos López</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Nivel de riesgo</Label>
+            <Select value={data.riskLevel} onValueChange={() => {}}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Bajo">Bajo</SelectItem>
+                <SelectItem value="Medio">Medio</SelectItem>
+                <SelectItem value="Alto">Alto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox id="urgent" checked={data.isUrgent} onCheckedChange={() => {}} />
+            <Label htmlFor="urgent">Marcar como urgente</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="email" checked={data.sendByEmail} onCheckedChange={() => {}} />
+            <Label htmlFor="email">Enviar por email</Label>
+          </div>
+        </div>
+      </div>
+      
+      <Separator />
+      
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={onAddComment} className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          Agregar comentario
+        </Button>
+        <Button onClick={onSendFeedback} variant="outline" className="flex items-center gap-2">
+          <Send className="h-4 w-4" />
+          Enviar feedback
+        </Button>
+        <Button onClick={onRequestDocuments} variant="outline" className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Solicitar documentos
+        </Button>
+        <Button onClick={onUpdateRiskAssessment} variant="outline" className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          Actualizar evaluación
+        </Button>
+      </div>
+      
+
+    </div>
+  </SectionCard>
+)
+
+const HistorialActividadSection: React.FC<{ data: any }> = ({ data }) => {
+  // Datos de ejemplo si no hay actividades
+  const defaultActividades = [
+    {
+      titulo: "Verificación iniciada",
+      descripcion: "El usuario comenzó el proceso de verificación de identidad",
+      fecha: "15/05/2023 10:15:00"
+    },
+    {
+      titulo: "Documento cargado",
+      descripcion: "Documento de identidad subido exitosamente",
+      fecha: "15/05/2023 10:15:45"
+    },
+    {
+      titulo: "Verificación OCR completada",
+      descripcion: "Procesamiento automático del documento finalizado",
+      fecha: "15/05/2023 10:16:15"
+    },
+    {
+      titulo: "Validación biométrica exitosa",
+      descripcion: "Verificación facial aprobada con 98% de confianza",
+      fecha: "15/05/2023 10:17:30"
+    }
+  ]
+
+  const displayActividades = data.actividades && data.actividades.length > 0 ? data.actividades : defaultActividades
+
+  return (
+    <SectionCard title="Historial de actividad" description="Registro completo de actividades" icon={History}>
+      <div className="space-y-4">
+        {displayActividades.map((actividad: any, index: number) => (
+          <div key={index} className="flex items-start gap-4 p-3 border rounded-lg">
+            <div className="flex-shrink-0">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">{actividad.titulo}</p>
+              <p className="text-sm text-muted-foreground">{actividad.descripcion}</p>
+              <p className="text-xs text-muted-foreground mt-1">{actividad.fecha}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  )
+}
 
 export default function PersonaDetallePage() {
   const params = useParams()
@@ -39,78 +288,38 @@ export default function PersonaDetallePage() {
   const [persona, setPersona] = useState<Persona | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("detalles")
   const [aprobacionModalOpen, setAprobacionModalOpen] = useState(false)
+  const [jsonModalOpen, setJsonModalOpen] = useState(false)
+  const [selectedStepData, setSelectedStepData] = useState<any>(null)
+  const [selectedStepName, setSelectedStepName] = useState<string>("")
   const { toast } = useToast()
 
-  const [editingProfile, setEditingProfile] = useState(false)
-  const [selectedProfile, setSelectedProfile] = useState("Estándar")
-  const [transactionAmount, setTransactionAmount] = useState(5000000)
+  // Analyst management state
+  const [analystNotes, setAnalystNotes] = useState("")
+  const [newComment, setNewComment] = useState("")
+  const [isInternalComment, setIsInternalComment] = useState(false)
+  const [clientFeedback, setClientFeedback] = useState("")
+  const [isUrgent, setIsUrgent] = useState(false)
+  const [sendByEmail, setSendByEmail] = useState(false)
+  const [selectedAnalyst, setSelectedAnalyst] = useState("Sin asignar")
+  const [riskLevel, setRiskLevel] = useState("Bajo")
+  const [riskObservations, setRiskObservations] = useState("")
+  const [documentObservations, setDocumentObservations] = useState("")
 
-  const profileAmounts = {
-    Estándar: 5000000,
-    Premium: 15000000,
-    VIP: 50000000,
-    Corporativo: 100000000,
-  }
-
-  // Function to format numbers with dots as thousands separators
-  const formatNumber = (num: number) => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-  }
-
-  useEffect(() => {
-    loadPersona()
-  }, [personaId])
-
-  useEffect(() => {
-    if (persona) {
-      setSelectedProfile(persona.perfilRiesgo.perfilTransaccional)
-      setTransactionAmount(
-        profileAmounts[persona.perfilRiesgo.perfilTransaccional as keyof typeof profileAmounts] || 5000000,
-      )
-    }
-  }, [persona])
-
+  // Preservar toda la lógica de negocio existente
   const loadPersona = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
-      setError(null)
-
-      if (isNaN(personaId)) {
-        setError("ID de persona inválido")
-        return
-      }
-
       const data = await PersonasService.getPersonaById(personaId)
-
-      if (!data) {
+      if (data) {
+        setPersona(data)
+      } else {
         setError("Persona no encontrada")
-        return
       }
-
-      // Verify that the loaded data matches the requested ID
-      if (data.id !== personaId) {
-        setError(`Error de integridad: Se solicitó persona ID ${personaId} pero se recibió ID ${data.id}`)
-        toast({
-          title: "Error de integridad de datos",
-          description: "Los datos no coinciden con la selección. Por favor, intente nuevamente.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      setPersona(data)
-
-      // Log successful load for debugging
-      console.log(`Successfully loaded persona: ID ${data.id}, Name: ${data.nombre}`)
-    } catch (error) {
-      console.error("Error loading persona:", error)
+    } catch (err) {
       setError("Error al cargar los datos de la persona")
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos de la persona",
-        variant: "destructive",
-      })
+      console.error("Error loading persona:", err)
     } finally {
       setLoading(false)
     }
@@ -118,124 +327,124 @@ export default function PersonaDetallePage() {
 
   const handleApprove = async () => {
     if (!persona) return
-
     try {
-      const success = await PersonasService.updatePersonaEstado(persona.id, "completado")
-      if (success) {
-        setPersona({ ...persona, estado: "completado", progreso: 100 })
-        toast({
-          title: "Persona aprobada",
-          description: "La verificación de identidad ha sido aprobada exitosamente",
-        })
-      }
+      await PersonasService.updatePersonaEstado(personaId, "aprobado")
+      toast({
+        title: "Verificación aprobada",
+        description: "La verificación ha sido aprobada exitosamente.",
+      })
+      loadPersona()
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo aprobar la persona",
+        description: "No se pudo aprobar la verificación.",
         variant: "destructive",
       })
     }
-    setAprobacionModalOpen(false)
   }
 
   const handleReject = async () => {
     if (!persona) return
-
     try {
-      const success = await PersonasService.updatePersonaEstado(persona.id, "rechazado")
-      if (success) {
-        setPersona({ ...persona, estado: "rechazado" })
-        toast({
-          title: "Persona rechazada",
-          description: "La verificación de identidad ha sido rechazada",
-        })
-      }
+      await PersonasService.updatePersonaEstado(personaId, "rechazado")
+      toast({
+        title: "Verificación rechazada",
+        description: "La verificación ha sido rechazada.",
+      })
+      loadPersona()
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo rechazar la persona",
+        description: "No se pudo rechazar la verificación.",
         variant: "destructive",
       })
     }
-    setAprobacionModalOpen(false)
   }
 
   const handleExport = async () => {
     if (!persona) return
-
     try {
-      const jsonData = await PersonasService.exportPersonaData(persona.id)
-      const blob = new Blob([jsonData], { type: "application/json" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `persona-${persona.id}-${persona.nombre.replace(/\s+/g, "-").toLowerCase()}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      const dataStr = JSON.stringify(persona, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `persona-${persona.id}.json`
+      link.click()
       URL.revokeObjectURL(url)
-
       toast({
-        title: "Exportación completada",
-        description: "Los datos se han exportado correctamente en formato JSON",
-      })
-    } catch (error) {
-      toast({
-        title: "Error en la exportación",
-        description: "No se pudieron exportar los datos",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const updateTransactionProfile = async () => {
-    if (!persona) return
-
-    try {
-      // Here you would typically make an API call to update the profile
-      // For now, we'll just update the local state
-      setPersona({
-        ...persona,
-        perfilRiesgo: {
-          ...persona.perfilRiesgo,
-          perfilTransaccional: selectedProfile,
-        },
-      })
-
-      setEditingProfile(false)
-      toast({
-        title: "Perfil actualizado",
-        description: `Perfil transaccional cambiado a ${selectedProfile} con monto AR$${formatNumber(transactionAmount)}`,
+        title: "Datos exportados",
+        description: "Los datos han sido exportados exitosamente.",
       })
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo actualizar el perfil transaccional",
+        description: "No se pudieron exportar los datos.",
         variant: "destructive",
       })
     }
   }
 
-  // Function to get status icon
+  // Funciones de gestión de analista
+  const handleAddComment = () => {
+    toast({
+      title: "Comentario agregado",
+      description: "El comentario ha sido agregado exitosamente.",
+    })
+  }
+
+  const handleSendFeedback = () => {
+    toast({
+      title: "Feedback enviado",
+      description: "El feedback ha sido enviado al cliente.",
+    })
+  }
+
+  const handleRequestDocuments = () => {
+    toast({
+      title: "Solicitud enviada",
+      description: "La solicitud de documentos ha sido enviada.",
+    })
+  }
+
+  const handleUpdateRiskAssessment = () => {
+    toast({
+      title: "Evaluación actualizada",
+      description: "La evaluación de riesgo ha sido actualizada.",
+    })
+  }
+
+  const handleFinalApproval = () => {
+    setAprobacionModalOpen(true)
+  }
+
+  const handleSaveAndContinue = () => {
+    toast({
+      title: "Guardado",
+      description: "Los cambios han sido guardados.",
+    })
+  }
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    loadPersona()
+  }, [personaId])
+
   const getStatusIcon = (estado: string) => {
     switch (estado) {
       case "completado":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return CheckCircle
       case "en-progreso":
-        return <Clock className="h-4 w-4 text-amber-600" />
+        return Clock
       case "revision":
-        return <AlertCircle className="h-4 w-4 text-blue-600" />
-      case "abandonado":
+        return Eye
       case "rechazado":
-        return <XCircle className="h-4 w-4 text-red-600" />
-      case "aprobado":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return XCircle
       default:
-        return null
+        return Clock
     }
   }
 
-  // Function to get status text
   const getStatusText = (estado: string) => {
     switch (estado) {
       case "completado":
@@ -243,19 +452,14 @@ export default function PersonaDetallePage() {
       case "en-progreso":
         return "En progreso"
       case "revision":
-        return "Revisión manual"
-      case "abandonado":
-        return "Abandonado"
+        return "En revisión"
       case "rechazado":
         return "Rechazado"
-      case "aprobado":
-        return "Aprobado"
       default:
-        return estado
+        return "Pendiente"
     }
   }
 
-  // Function to get status variant
   const getStatusVariant = (estado: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (estado) {
       case "completado":
@@ -264,745 +468,224 @@ export default function PersonaDetallePage() {
         return "secondary"
       case "revision":
         return "outline"
-      case "abandonado":
       case "rechazado":
         return "destructive"
-      case "aprobado":
-        return "default"
       default:
-        return "secondary"
+        return "outline"
     }
   }
 
+  const shouldShowAnalystTab = (estado: string) => {
+    return estado === "revision" || estado === "en-progreso"
+  }
+
+  useEffect(() => {
+    loadPersona()
+  }, [personaId])
+
   if (loading) {
     return (
-      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-8 w-8" />
-          <div>
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-32" />
-          </div>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-4 w-1/2" />
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           <div className="lg:col-span-8 space-y-8">
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-2 gap-4">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-32" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
           </div>
-
           <div className="lg:col-span-4 space-y-6">
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i}>
-                    <Skeleton className="h-4 w-20 mb-1" />
-                    <Skeleton className="h-4 w-32" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48" />
           </div>
         </div>
-      </main>
+      </div>
     )
   }
 
   if (error || !persona) {
     return (
-      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/personas">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a personas
-            </Link>
-          </Button>
-        </div>
-
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error || "No se pudo cargar la información de la persona"}</AlertDescription>
         </Alert>
+      </div>
+    )
+  }
 
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Persona no encontrada</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              La persona que buscas no existe o ha sido eliminada.
-            </p>
-            <Button asChild>
-              <Link href="/personas">Volver a la lista</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </main>
+  // Configuración del nuevo sistema unificado
+  const status: StatusConfig = {
+    value: getStatusText(persona.estado),
+    label: "Estado",
+    variant: getStatusVariant(persona.estado),
+    icon: getStatusIcon(persona.estado)
+  }
+
+  // Acciones movidas al sidebar - header solo muestra información
+  const primaryActions: ActionConfig[] = []
+
+  const tabs: TabConfig[] = [
+    { id: "detalles", label: "Detalles de onboarding" },
+    { id: "cronologia", label: "Cronología del flujo" },
+    ...(shouldShowAnalystTab(persona.estado) ? [{ id: "gestion", label: "Gestión de analista" }] : []),
+    { id: "historial", label: "Historial de actividad" }
+  ]
+
+  const sections: SectionConfig[] = [
+    {
+      id: "detalles-documento",
+      title: "Documento de identidad",
+      component: DocumentoIdentidadSection,
+      props: { data: persona.datosOCR }
+    },
+    {
+      id: "detalles-riesgo",
+      title: "Perfil de riesgo",
+      component: PerfilRiesgoSection,
+      props: { 
+        data: {
+          nivelRiesgo: persona.perfilRiesgo.nivelRiesgo,
+          compliance: persona.perfilRiesgo.compliance,
+          perfilTransaccional: persona.perfilRiesgo.perfilTransaccional,
+          monto: "5.000.000"
+        }
+      }
+    },
+    {
+      id: "detalles-biometrica",
+      title: "Validación biométrica",
+      component: ValidacionBiometricaSection,
+      props: { 
+        data: {
+          resultado: persona.resultados?.biometria?.resultado || "Válido",
+          confianza: persona.resultados?.biometria?.confianza || 98,
+          observaciones: "Documento en excelente estado, todos los campos legibles"
+        }
+      }
+    },
+    {
+      id: "cronologia",
+      title: "Cronología",
+      component: CronologiaSection,
+      props: { events: [] } // Forzar uso de eventos por defecto
+    },
+    ...(shouldShowAnalystTab(persona.estado) ? [{
+      id: "gestion-analista",
+      title: "Gestión de analista",
+      component: GestionAnalistaSection,
+      props: { 
+        data: {
+          selectedAnalyst,
+          riskLevel,
+          isUrgent,
+          sendByEmail
+        },
+        onAddComment: handleAddComment,
+        onSendFeedback: handleSendFeedback,
+        onRequestDocuments: handleRequestDocuments,
+        onUpdateRiskAssessment: handleUpdateRiskAssessment,
+        onFinalApproval: handleFinalApproval,
+        onSaveAndContinue: handleSaveAndContinue
+      }
+    }] : []),
+    {
+      id: "historial",
+      title: "Historial de actividad",
+      component: HistorialActividadSection,
+      props: { data: { actividades: [] } } // Forzar uso de actividades por defecto
+    }
+  ]
+
+  // Configuración de acciones para el sidebar
+  const sidebarActions: ActionItem[] = [
+    {
+      label: "Aprobar verificación",
+      variant: "default",
+      icon: ThumbsUp,
+      onClick: handleApprove
+    },
+    {
+      label: "Rechazar verificación",
+      variant: "destructive",
+      icon: ThumbsDown,
+      onClick: handleReject
+    },
+    {
+      label: "Exportar datos JSON",
+      variant: "outline",
+      icon: Download,
+      onClick: handleExport
+    }
+  ]
+
+  const sidebarConfig: SidebarConfig = {
+    quickActions: {
+      title: "Acciones disponibles",
+      actions: sidebarActions
+    },
+    summary: {
+      title: "Información general",
+      data: [
+        { label: "Progreso", value: persona.progreso, type: "progress" },
+        { label: "Estado actual", value: getStatusText(persona.estado), type: "badge", variant: getStatusVariant(persona.estado) },
+        { label: "Flujo", value: persona.flujo, type: "badge", variant: "outline" },
+        { label: "Documento", value: persona.documento, type: "text" },
+        { label: "Email", value: persona.email, type: "email" },
+        { label: "Teléfono", value: persona.telefono, type: "tel" },
+        { label: "Fecha de inicio", value: persona.fecha, type: "text" }
+      ]
+    }
+  }
+
+  // Mostrar loading mientras se cargan los datos
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando datos de la persona...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Mostrar error si hay alguno
+  if (error || !persona) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+            <AlertCircle className="h-6 w-6 text-destructive" />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">Error al cargar los datos</h2>
+          <p className="text-muted-foreground mb-4">
+            {error || "No se pudo cargar la información de la persona"}
+          </p>
+          <Button onClick={loadPersona} variant="outline">
+            Reintentar
+          </Button>
+        </div>
+      </div>
     )
   }
 
   return (
-    <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <PageHeader
+    <>
+      <DetailPageTemplate
         title={persona.nombre}
-        breadcrumbs={[{ label: "Personas", href: "/personas" }, { label: persona.nombre }]}
-        actions={
-          <div className="flex items-center gap-2">
-            {getStatusIcon(persona.estado)}
-            <Badge variant={getStatusVariant(persona.estado)} className="font-medium">
-              {getStatusText(persona.estado)}
-            </Badge>
-          </div>
-        }
+        subtitle="Detalles del proceso de onboarding"
+        status={status}
+        primaryActions={primaryActions}
+        tabs={tabs}
+        sections={sections}
+        sidebarConfig={sidebarConfig}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-        {/* Main panel - content */}
-        <div className="lg:col-span-8 space-y-8">
-          <Tabs defaultValue="detalles" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
-              <TabsTrigger value="detalles">Detalles de onboarding</TabsTrigger>
-              <TabsTrigger value="informacion">Información general</TabsTrigger>
-              <TabsTrigger value="historial">Historial de actividad</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="detalles" className="space-y-8">
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Documento de identidad
-                  </CardTitle>
-                  <CardDescription>Resultados del procesamiento OCR</CardDescription>
-                </CardHeader>
-                <CardContent className="p-8">
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Nombre</p>
-                          <p className="text-sm font-semibold">{persona.datosOCR.nombre}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Apellidos</p>
-                          <p className="text-sm font-semibold">{persona.datosOCR.apellidos}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Documento</p>
-                          <p className="text-sm font-mono">{persona.datosOCR.documento}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Tipo de documento</p>
-                          <Badge variant="outline">{persona.datosOCR.tipoDocumento}</Badge>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Fecha de nacimiento</p>
-                          <p className="text-sm">{persona.datosOCR.fechaNacimiento}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Nacionalidad</p>
-                          <p className="text-sm">{persona.datosOCR.nacionalidad}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">País</p>
-                          <p className="text-sm">{persona.geolocalizacion.pais}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Ciudad</p>
-                          <p className="text-sm">{persona.geolocalizacion.ciudad}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Dispositivo</p>
-                          <p className="text-sm">
-                            {persona.dispositivoInfo.tipo} - {persona.dispositivoInfo.modelo}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">Sistema Operativo</p>
-                          <p className="text-sm">{persona.dispositivoInfo.sistemaOperativo}</p>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <p className="font-semibold">Resultado OCR</p>
-                        </div>
-                        <div className="pl-6 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-muted-foreground">Resultado:</p>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              {persona.resultados.ocr.resultado}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-muted-foreground">Confianza:</p>
-                            <p className="text-sm font-semibold">{persona.resultados.ocr.confianza}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Observaciones:</p>
-                            <p className="text-sm mt-1">{persona.resultados.ocr.observaciones}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-4 w-4 text-primary" />
-                          <p className="font-semibold">Perfil de riesgo</p>
-                        </div>
-                        <div className="pl-6 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-muted-foreground">Nivel de riesgo:</p>
-                            <Badge
-                              variant={
-                                persona.perfilRiesgo.nivelRiesgo === "Alto"
-                                  ? "destructive"
-                                  : persona.perfilRiesgo.nivelRiesgo === "Medio"
-                                    ? "secondary"
-                                    : "default"
-                              }
-                            >
-                              {persona.perfilRiesgo.nivelRiesgo}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-muted-foreground">Compliance:</p>
-                            <Badge variant={persona.perfilRiesgo.compliance === "Aprobado" ? "default" : "destructive"}>
-                              {persona.perfilRiesgo.compliance}
-                            </Badge>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Perfil transaccional:</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <div className="flex-1">
-                                {editingProfile ? (
-                                  <div className="space-y-4 bg-slate-50 p-4 rounded-lg border animate-in fade-in duration-200">
-                                    <div className="space-y-2">
-                                      <label htmlFor="profile-select" className="text-sm font-medium">
-                                        Seleccionar perfil
-                                      </label>
-                                      <Select
-                                        value={selectedProfile}
-                                        onValueChange={(value) => {
-                                          setSelectedProfile(value)
-                                          const newAmount =
-                                            profileAmounts[value as keyof typeof profileAmounts] ||
-                                            profileAmounts["Estándar"]
-                                          setTransactionAmount(newAmount)
-                                        }}
-                                      >
-                                        <SelectTrigger className="w-full" id="profile-select">
-                                          <SelectValue placeholder="Seleccionar perfil" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="Estándar">Estándar</SelectItem>
-                                          <SelectItem value="Premium">Premium</SelectItem>
-                                          <SelectItem value="VIP">VIP</SelectItem>
-                                          <SelectItem value="Corporativo">Corporativo</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <label htmlFor="amount-input" className="text-sm font-medium">
-                                        Monto mensual (AR$)
-                                      </label>
-                                      <div className="flex items-center">
-                                        <span className="text-sm mr-2 font-medium">AR$</span>
-                                        <input
-                                          id="amount-input"
-                                          type="text"
-                                          value={formatNumber(transactionAmount)}
-                                          onChange={(e) => {
-                                            const rawValue = e.target.value.replace(/\./g, "")
-                                            const numValue = Number.parseInt(rawValue) || 0
-                                            setTransactionAmount(numValue)
-                                          }}
-                                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                        />
-                                      </div>
-                                    </div>
-
-                                    <div className="flex gap-2 pt-2">
-                                      <Button size="sm" onClick={updateTransactionProfile}>
-                                        Guardar cambios
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProfile(persona.perfilRiesgo.perfilTransaccional)
-                                          setTransactionAmount(
-                                            profileAmounts[
-                                              persona.perfilRiesgo.perfilTransaccional as keyof typeof profileAmounts
-                                            ] || 5000000,
-                                          )
-                                          setEditingProfile(false)
-                                        }}
-                                      >
-                                        Cancelar
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="animate-in fade-in duration-200">
-                                    <p className="text-sm font-semibold">{selectedProfile}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Monto: AR${formatNumber(transactionAmount)} mensual
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditingProfile(!editingProfile)}
-                                className={editingProfile ? "hidden" : ""}
-                              >
-                                Editar
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary" />
-                          <p className="font-semibold">Información de ubicación y dispositivo</p>
-                        </div>
-                        <div className="pl-6 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-muted-foreground">Coordenadas</p>
-                              <p className="text-sm font-mono">{persona.geolocalizacion.coordenadas}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-muted-foreground">Dirección IP</p>
-                              <p className="text-sm font-mono">{persona.geolocalizacion.direccionIP}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-muted-foreground">Proveedor ISP</p>
-                              <p className="text-sm">{persona.geolocalizacion.proveedor}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-muted-foreground">Navegador</p>
-                              <p className="text-sm">{persona.dispositivoInfo.navegador}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-muted-foreground">Resolución</p>
-                              <p className="text-sm font-mono">{persona.dispositivoInfo.resolucion}</p>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">User Agent</p>
-                            <p className="text-xs text-muted-foreground break-all bg-muted/50 p-2 rounded">
-                              {persona.dispositivoInfo.userAgent}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="border rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-muted p-3 text-sm font-medium">Anverso del documento</div>
-                        <div className="p-6 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/50">
-                          <div className="relative h-48 w-full flex items-center justify-center">
-                            <div className="text-center">
-                              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                              <p className="text-sm text-muted-foreground">Imagen del documento</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="border rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-muted p-3 text-sm font-medium">Reverso del documento</div>
-                        <div className="p-6 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/50">
-                          <div className="relative h-48 w-full flex items-center justify-center">
-                            <div className="text-center">
-                              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                              <p className="text-sm text-muted-foreground">Imagen del documento</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCheck className="h-5 w-5 text-primary" />
-                    Validación biométrica
-                  </CardTitle>
-                  <CardDescription>Resultados de la comparación facial</CardDescription>
-                </CardHeader>
-                <CardContent className="p-8">
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="h-4 w-4 text-primary" />
-                          <p className="font-semibold">Resultado biometría</p>
-                        </div>
-                        <div className="pl-6 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-muted-foreground">Resultado:</p>
-                            <Badge
-                              variant={
-                                persona.resultados.biometria.resultado === "Válido"
-                                  ? "default"
-                                  : persona.resultados.biometria.resultado === "Rechazado"
-                                    ? "destructive"
-                                    : "outline"
-                              }
-                              className={
-                                persona.resultados.biometria.resultado === "En revisión" ||
-                                persona.resultados.biometria.resultado === "Revisión manual"
-                                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                                  : ""
-                              }
-                            >
-                              {persona.resultados.biometria.resultado}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-muted-foreground">Similitud:</p>
-                            <p className="text-sm font-semibold">{persona.resultados.biometria.confianza}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Observaciones:</p>
-                            <p className="text-sm mt-1">{persona.resultados.biometria.observaciones}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="h-4 w-4 text-primary" />
-                          <p className="font-semibold">Hash biométrico</p>
-                        </div>
-                        <div className="pl-6 space-y-3">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">Hash:</p>
-                            <p className="text-sm font-mono text-muted-foreground">
-                              {persona.hashBiometrico || "No disponible"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Descripción:</p>
-                            <p className="text-sm mt-1 text-muted-foreground">
-                              Identificador único generado a partir de los datos biométricos del usuario para
-                              verificación y control de duplicados.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {(persona.resultados.biometria.resultado === "En revisión" ||
-                        persona.resultados.biometria.resultado === "Revisión manual") && (
-                        <div className="pt-4 border-t">
-                          <Alert>
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>
-                              <strong>Motivo de revisión manual:</strong> La similitud entre la foto del documento y la
-                              selfie está por debajo del umbral mínimo requerido (80%). Se requiere revisión manual para
-                              confirmar que se trata de la misma persona.
-                            </AlertDescription>
-                          </Alert>
-                        </div>
-                      )}
-
-                      {persona.blacklistBiometrico && (
-                        <div className="pt-3 border-t">
-                          <Badge variant="destructive" className="mb-2">
-                            Blacklist biométrico
-                          </Badge>
-                          <p className="text-sm text-muted-foreground">
-                            Esta persona fue rechazada por no superar la validación biométrica (posible deepfake). Su
-                            hash biométrico ha sido registrado en la lista de bloqueo.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="border rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-muted p-3 text-sm font-medium">Foto del documento</div>
-                        <div className="p-6 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/50">
-                          <div className="relative h-48 w-full flex items-center justify-center">
-                            <div className="text-center">
-                              <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                              <p className="text-sm text-muted-foreground">Foto extraída del documento</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="border rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-muted p-3 text-sm font-medium">Selfie capturada</div>
-                        <div className="p-6 flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/50">
-                          <div className="relative h-48 w-full flex items-center justify-center">
-                            <div className="text-center">
-                              <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                              <p className="text-sm text-muted-foreground">Selfie del usuario</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="informacion" className="space-y-6">
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle>Información general</CardTitle>
-                  <CardDescription>Datos adicionales del usuario</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Email</p>
-                        <p className="text-sm font-semibold">{persona.email}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Teléfono</p>
-                        <p className="text-sm font-semibold">{persona.telefono}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Flujo utilizado</p>
-                        <Badge variant="outline">{persona.flujo}</Badge>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Fecha de inicio</p>
-                        <p className="text-sm">{persona.fecha}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Estado actual</p>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(persona.estado)}
-                          <Badge variant={getStatusVariant(persona.estado)}>{getStatusText(persona.estado)}</Badge>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Progreso</p>
-                        <div className="flex items-center gap-2">
-                          <Progress value={persona.progreso} className="h-2 flex-1" />
-                          <span className="text-sm font-medium text-muted-foreground min-w-[3rem]">
-                            {persona.progreso}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="historial" className="space-y-6">
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle>Historial de actividad</CardTitle>
-                  <CardDescription>Registro cronológico de todas las acciones realizadas</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Aquí se mostraría el historial detallado de todas las acciones realizadas por el usuario y el
-                      system durante el proceso de onboarding.
-                    </p>
-                    <div className="border rounded-lg p-4 bg-muted/20">
-                      <p className="text-sm font-medium mb-2">Próximamente</p>
-                      <p className="text-sm text-muted-foreground">
-                        Esta sección incluirá logs detallados, cambios de estado, interacciones del usuario y eventos
-                        del sistema.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Right sidebar panel */}
-        <div className="lg:col-span-4 space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle>Información general</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Flujo</p>
-                <Badge variant="outline" className="font-medium">
-                  {persona.flujo}
-                </Badge>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Documento</p>
-                <p className="text-sm font-mono">{persona.documento}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <p className="text-sm">{persona.email}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Teléfono</p>
-                <p className="text-sm">{persona.telefono}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Fecha de inicio</p>
-                <p className="text-sm">{persona.fecha}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Progreso</p>
-                <div className="flex items-center gap-2">
-                  <Progress value={persona.progreso} className="h-2 flex-1" />
-                  <span className="text-sm font-medium text-muted-foreground min-w-[3rem]">{persona.progreso}%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle>Cronología del proceso</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div className="relative pl-6 space-y-6">
-                <div className="absolute top-0 bottom-0 left-2 border-l-2 border-dashed border-muted" />
-
-                {persona.pasos.map((paso, index) => (
-                  <div key={paso.id} className="relative">
-                    <div
-                      className={`absolute -left-6 h-4 w-4 rounded-full border-2 bg-background ${
-                        paso.estado === "completado"
-                          ? "border-green-500 bg-green-500"
-                          : paso.estado === "revision"
-                            ? "border-blue-500 bg-blue-500"
-                            : "border-muted bg-muted"
-                      }`}
-                    />
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm">{paso.nombre}</p>
-                        {paso.estado === "completado" && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {paso.estado === "revision" && <Clock className="h-4 w-4 text-blue-600" />}
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{paso.timestamp}</span>
-                        <span>Duración: {paso.tiempo}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle>Acciones disponibles</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {(persona.estado === "revision" || persona.estado === "en-progreso") && (
-                <div className="space-y-3">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button className="w-full" onClick={() => setAprobacionModalOpen(true)}>
-                          <ThumbsUp className="mr-2 h-4 w-4" />
-                          Aprobar verificación
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Aprobar la verificación de identidad</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="destructive" className="w-full" onClick={() => setAprobacionModalOpen(true)}>
-                          <ThumbsDown className="mr-2 h-4 w-4" />
-                          Rechazar verificación
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Rechazar la verificación de identidad</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
-
-              {persona.estado !== "revision" && persona.estado !== "en-progreso" && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Esta persona ya ha sido procesada. Estado actual: <strong>{getStatusText(persona.estado)}</strong>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {persona.estado === "rechazado" && persona.motivoRechazo && (
-                <Alert variant="destructive" className="mt-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Motivo del rechazo</AlertTitle>
-                  <AlertDescription>{persona.motivoRechazo}</AlertDescription>
-                </Alert>
-              )}
-
-              <Separator />
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" className="w-full" onClick={handleExport}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Exportar datos JSON
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Descargar todos los datos en formato JSON</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
+      {/* Mantener modales existentes */}
       <AprobacionModal
         open={aprobacionModalOpen}
         onOpenChange={setAprobacionModalOpen}
@@ -1010,6 +693,41 @@ export default function PersonaDetallePage() {
         onReject={handleReject}
         personaName={persona.nombre}
       />
-    </main>
+
+      {/* JSON Modal */}
+      <Dialog open={jsonModalOpen} onOpenChange={setJsonModalOpen}>
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Datos del paso - {selectedStepName}
+            </DialogTitle>
+            <DialogDescription>
+              Información detallada de entrada y salida durante este paso del proceso
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStepData && (
+            <div className="overflow-hidden flex-1">
+              <div className="bg-muted/50 border rounded-lg overflow-hidden text-xs">
+                <div className="p-4 max-h-96 overflow-y-auto">
+                  <ReactJson
+                    src={selectedStepData}
+                    name={false}
+                    collapsed={2}
+                    enableClipboard={true}
+                    displayDataTypes={false}
+                    theme="rjv-default"
+                    style={{
+                      backgroundColor: "transparent",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

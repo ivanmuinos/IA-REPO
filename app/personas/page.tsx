@@ -1,12 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { PageHeader } from "@/components/page-header"
 import { Filter, Download, AlertCircle } from "lucide-react"
 import { Suspense, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PersonasList } from "@/components/personas-list"
 import { ApprovalQueueModal } from "@/components/approval-queue-modal"
+import { useToast } from "@/hooks/use-toast"
 
 // Datos de ejemplo
 const personas = [
@@ -54,12 +54,18 @@ const personas = [
 
 function PersonasPageSkeleton() {
   return (
-    <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="space-y-4">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
+      <div className="flex items-center justify-between space-y-2">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96" />
+        <div className="flex items-center space-x-2">
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-9 w-32" />
+        </div>
       </div>
-      <div className="space-y-6">
+      <Skeleton className="h-4 w-96" />
+      
+      <div className="space-y-4">
         {Array.from({ length: 8 }).map((_, i) => (
           <Skeleton key={i} className="h-16" />
         ))}
@@ -70,15 +76,14 @@ function PersonasPageSkeleton() {
 
 function PersonasPageContent() {
   const [approvalQueueOpen, setApprovalQueueOpen] = useState(false)
+  const { toast } = useToast()
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <PageHeader
-        title="Gestión de personas"
-        description="Monitorea y gestiona los procesos de verificación de identidad de todos los usuarios en tus flujos de onboarding"
-      >
-        <div className="flex gap-3">
-          <Button variant="outline" size="sm">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Gestión de personas</h2>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={() => toast({ title: "Filtros avanzados", description: "Funcionalidad en desarrollo" })}>
             <Filter className="h-4 w-4 mr-2" />
             Filtros avanzados
           </Button>
@@ -86,15 +91,18 @@ function PersonasPageContent() {
             <AlertCircle className="h-4 w-4 mr-2" />
             Cola de aprobación
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast({ title: "Exportar datos", description: "Funcionalidad en desarrollo" })}>
             <Download className="h-4 w-4 mr-2" />
             Exportar datos
           </Button>
         </div>
-      </PageHeader>
+      </div>
+      <p className="text-muted-foreground">
+        Monitorea y gestiona los procesos de verificación de identidad de todos los usuarios en tus flujos de onboarding
+      </p>
 
-      <PersonasList personas={personas} />
-      <ApprovalQueueModal open={approvalQueueOpen} onOpenChange={setApprovalQueueOpen} type="personas" />
+      <PersonasList />
+      <ApprovalQueueModal open={approvalQueueOpen} onOpenChange={setApprovalQueueOpen} type="person" />
     </div>
   )
 }

@@ -17,6 +17,7 @@ import { ChevronDown, Filter } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -79,12 +80,22 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center justify-between">
         {searchColumn && (
           <div className="flex items-center gap-4">
-            <Input
-              placeholder={searchPlaceholder}
-              value={(table.getColumn(searchColumn)?.getFilterValue() as string) ?? ""}
-              onChange={(event) => table.getColumn(searchColumn)?.setFilterValue(event.target.value)}
-              className="max-w-sm"
-            />
+            <div className="relative">
+              <Input
+                placeholder={searchPlaceholder}
+                value={(table.getColumn(searchColumn)?.getFilterValue() as string) ?? ""}
+                onChange={(event) => table.getColumn(searchColumn)?.setFilterValue(event.target.value)}
+                className="max-w-sm"
+              />
+              {(table.getColumn(searchColumn)?.getFilterValue() as string) && (
+                <Badge 
+                  variant="secondary" 
+                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs animate-pulse"
+                >
+                  ✓
+                </Badge>
+              )}
+            </div>
           </div>
         )}
         <div className="flex items-center gap-2 ml-auto">
@@ -154,9 +165,14 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-t pt-4">
         <div className="flex-1 text-sm text-muted-foreground">
           Mostrando {table.getFilteredRowModel().rows.length} de {data.length} registros
+          {table.getPageCount() > 1 && (
+            <span className="ml-2 text-primary font-medium">
+              • Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+            </span>
+          )}
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">

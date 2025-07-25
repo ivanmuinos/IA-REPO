@@ -3,7 +3,6 @@ import { Shield, Bell, Users, Webhook, Sliders } from "lucide-react"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { PageHeader } from "@/components/page-header"
 import { ParametrosGenerales } from "@/components/configuracion/parametros-generales"
 import { UsuariosRoles } from "@/components/configuracion/usuarios-roles"
 import { Seguridad } from "@/components/configuracion/seguridad"
@@ -12,12 +11,13 @@ import { ApiWebhooks } from "@/components/configuracion/api-webhooks"
 
 function ConfiguracionPageSkeleton() {
   return (
-    <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="space-y-4">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
+      <div className="flex items-center justify-between space-y-2">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96" />
       </div>
-      <div className="space-y-6">
+      <Skeleton className="h-4 w-96" />
+      
+      <div className="space-y-4">
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -27,13 +27,15 @@ function ConfiguracionPageSkeleton() {
 
 function ConfiguracionPageContent() {
   return (
-    <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <PageHeader
-        title="Configuración del sistema"
-        description="Gestiona los ajustes generales, usuarios, seguridad y integraciones de tu plataforma de onboarding"
-      />
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Configuración del sistema</h2>
+      </div>
+      <p className="text-muted-foreground">
+        Gestiona los ajustes generales, usuarios, seguridad y integraciones de tu plataforma de onboarding
+      </p>
 
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs defaultValue="general" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Sliders className="h-4 w-4" />
@@ -57,23 +59,23 @@ function ConfiguracionPageContent() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-6">
+        <TabsContent value="general" className="space-y-4">
           <ParametrosGenerales />
         </TabsContent>
 
-        <TabsContent value="usuarios" className="space-y-6">
+        <TabsContent value="usuarios" className="space-y-4">
           <UsuariosRoles />
         </TabsContent>
 
-        <TabsContent value="seguridad" className="space-y-6">
+        <TabsContent value="seguridad" className="space-y-4">
           <Seguridad />
         </TabsContent>
 
-        <TabsContent value="notificaciones" className="space-y-6">
+        <TabsContent value="notificaciones" className="space-y-4">
           <Notificaciones />
         </TabsContent>
 
-        <TabsContent value="api" className="space-y-6">
+        <TabsContent value="api" className="space-y-4">
           <ApiWebhooks />
         </TabsContent>
       </Tabs>

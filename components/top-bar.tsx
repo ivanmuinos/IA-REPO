@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { MobileNavSheet } from "@/components/mobile-nav-sheet"
+import { ConnectionIndicator } from "@/components/ui/loading-states"
 import Image from "next/image"
 
 export function TopBar() {
@@ -22,6 +24,7 @@ export function TopBar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo y título */}
           <div className="flex items-center gap-4">
+            <MobileNavSheet />
             <div className="flex items-center gap-3">
               <Image
                 src="https://i.postimg.cc/HLqVXFP1/Guardline-ISO.png"
@@ -39,19 +42,27 @@ export function TopBar() {
 
           {/* Barra de búsqueda central */}
           <div className="hidden md:block flex-1 max-w-md mx-4 lg:mx-8">
-            <div className="relative">
+            <div className="relative group">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Buscar flujos, personas o configuración..."
-                className="pl-10 h-10"
+                className="pl-10 h-10 focus:ring-2 focus:ring-primary/20 transition-all"
                 aria-label="Búsqueda global"
               />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </div>
             </div>
           </div>
 
           {/* Acciones del usuario */}
           <div className="flex items-center gap-4">
+            {/* Indicador de conexión */}
+            <ConnectionIndicator connected={true} lastSync="Hace 2 min" />
+            
             {/* Ayuda */}
             <Button variant="ghost" size="icon" aria-label="Centro de ayuda">
               <HelpCircle className="h-5 w-5" />
@@ -64,7 +75,7 @@ export function TopBar() {
                   <Bell className="h-5 w-5" />
                   <Badge
                     variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs animate-pulse"
                   >
                     3
                   </Badge>
@@ -78,15 +89,26 @@ export function TopBar() {
                   </Badge>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex flex-col items-start gap-1 p-4">
+                <DropdownMenuItem className="flex flex-col items-start gap-2 p-4">
                   <div className="flex items-center gap-2 w-full">
-                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                    <div className="h-2 w-2 rounded-full bg-amber-500" />
                     <span className="font-medium text-sm">Flujo pendiente de revisión</span>
+                    <Badge variant="outline" className="ml-auto text-xs">Urgente</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     El flujo "KYC Empresas" tiene 5 personas esperando aprobación manual
                   </p>
-                  <span className="text-xs text-muted-foreground">Hace 2 horas</span>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-xs text-muted-foreground">Hace 2 horas</span>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" className="h-6 text-xs">
+                        Ver
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-6 text-xs">
+                        Marcar
+                      </Button>
+                    </div>
+                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="flex flex-col items-start gap-1 p-4">

@@ -1,4 +1,4 @@
-import { createServerSupabaseClient, createClientSupabaseClient } from "./supabase"
+import { createServerSupabaseClient, createClientSupabaseClient, isSupabaseAvailable } from "./supabase"
 import type { FlowNode, FlowConnection } from "@/types/flow"
 
 export interface Flow {
@@ -47,6 +47,42 @@ const nodeTypeMapping: Record<string, string> = {
   error_state: "mensaje",
   form: "inicio",
 }
+
+// Datos de ejemplo para modo demo
+const demoFlows: Flow[] = [
+  {
+    id: "demo-1",
+    name: "Flujo de Verificación KYC",
+    type: "kyc_verification",
+    status: "active",
+    created_at: "2024-01-15T10:00:00Z",
+    updated_at: "2024-01-20T14:30:00Z",
+    last_edited: "2024-01-20T14:30:00Z",
+    last_activity: "2024-01-20T14:30:00Z",
+    description: "Flujo completo de verificación de identidad"
+  },
+  {
+    id: "demo-2",
+    name: "Proceso de Onboarding",
+    type: "onboarding",
+    status: "draft",
+    created_at: "2024-01-18T09:00:00Z",
+    updated_at: "2024-01-19T16:45:00Z",
+    last_edited: "2024-01-19T16:45:00Z",
+    description: "Proceso de registro de nuevos usuarios"
+  },
+  {
+    id: "demo-3",
+    name: "Verificación de Documentos",
+    type: "document_verification",
+    status: "active",
+    created_at: "2024-01-10T11:00:00Z",
+    updated_at: "2024-01-15T13:20:00Z",
+    last_edited: "2024-01-15T13:20:00Z",
+    last_activity: "2024-01-15T13:20:00Z",
+    description: "Verificación automática de documentos"
+  }
+]
 
 // Función para obtener todos los flujos
 export async function getFlows(): Promise<Flow[]> {
@@ -322,14 +358,26 @@ export async function deleteFlow(id: string): Promise<{ success: boolean }> {
 export const clientFlowService = {
   async getFlows(): Promise<Flow[]> {
     try {
+      // Si Supabase no está disponible, usar datos de ejemplo
+      if (!isSupabaseAvailable()) {
+        console.log("Usando datos de ejemplo - Supabase no configurado")
+        return demoFlows
+      }
+
       const supabase = createClientSupabaseClient()
+      if (!supabase) {
+        console.log("Usando datos de ejemplo - Cliente Supabase no disponible")
+        return demoFlows
+      }
+
       const { data, error } = await supabase.from("flows").select("*").order("last_edited", { ascending: false })
 
       if (error) throw new Error(`Error al obtener flujos: ${error.message}`)
       return data as Flow[]
     } catch (error) {
       console.error("Error in clientFlowService.getFlows:", error)
-      throw error
+      console.log("Usando datos de ejemplo debido al error")
+      return demoFlows
     }
   },
 
@@ -337,7 +385,20 @@ export const clientFlowService = {
     try {
       if (!id) throw new Error("ID de flujo requerido")
 
+      // Si Supabase no está disponible, buscar en datos de ejemplo
+      if (!isSupabaseAvailable()) {
+        const demoFlow = demoFlows.find(flow => flow.id === id)
+        if (demoFlow) return demoFlow
+        throw new Error("Flujo no encontrado")
+      }
+
       const supabase = createClientSupabaseClient()
+      if (!supabase) {
+        const demoFlow = demoFlows.find(flow => flow.id === id)
+        if (demoFlow) return demoFlow
+        throw new Error("Flujo no encontrado")
+      }
+
       const { data, error } = await supabase.from("flows").select("*").eq("id", id).single()
 
       if (error) throw new Error(`Error al obtener flujo: ${error.message}`)
@@ -352,7 +413,82 @@ export const clientFlowService = {
     try {
       if (!flowId) throw new Error("ID de flujo requerido")
 
+      // Si Supabase no está disponible, devolver datos de ejemplo
+      if (!isSupabaseAvailable()) {
+        console.log("Usando datos de ejemplo para pasos del flujo")
+        return {
+          nodes: [
+            {
+              id: "step-1",
+              type: "inicio",
+              position: { x: 100, y: 100 },
+              data: { label: "Inicio del Proceso" }
+            },
+            {
+              id: "step-2", 
+              type: "ocr",
+              position: { x: 300, y: 100 },
+              data: { label: "Captura de Documento" }
+            },
+            {
+              id: "step-3",
+              type: "biometria", 
+              position: { x: 500, y: 100 },
+              data: { label: "Verificación Biométrica" }
+            },
+            {
+              id: "step-4",
+              type: "fin",
+              position: { x: 700, y: 100 },
+              data: { label: "Finalización" }
+            }
+          ],
+          connections: [
+            { id: "step-1-step-2", source: "step-1", target: "step-2" },
+            { id: "step-2-step-3", source: "step-2", target: "step-3" },
+            { id: "step-3-step-4", source: "step-3", target: "step-4" }
+          ]
+        }
+      }
+
       const supabase = createClientSupabaseClient()
+      if (!supabase) {
+        console.log("Usando datos de ejemplo para pasos del flujo")
+        return {
+          nodes: [
+            {
+              id: "step-1",
+              type: "inicio",
+              position: { x: 100, y: 100 },
+              data: { label: "Inicio del Proceso" }
+            },
+            {
+              id: "step-2", 
+              type: "ocr",
+              position: { x: 300, y: 100 },
+              data: { label: "Captura de Documento" }
+            },
+            {
+              id: "step-3",
+              type: "biometria", 
+              position: { x: 500, y: 100 },
+              data: { label: "Verificación Biométrica" }
+            },
+            {
+              id: "step-4",
+              type: "fin",
+              position: { x: 700, y: 100 },
+              data: { label: "Finalización" }
+            }
+          ],
+          connections: [
+            { id: "step-1-step-2", source: "step-1", target: "step-2" },
+            { id: "step-2-step-3", source: "step-2", target: "step-3" },
+            { id: "step-3-step-4", source: "step-3", target: "step-4" }
+          ]
+        }
+      }
+
       const { data, error } = await supabase.from("flow_steps").select("*").eq("flow_id", flowId).order("order_index")
 
       if (error) throw new Error(`Error al obtener pasos: ${error.message}`)
@@ -362,7 +498,7 @@ export const clientFlowService = {
       const connections: FlowConnection[] = []
 
       // Primero crear todos los nodos
-      data.forEach((step) => {
+      data.forEach((step: any) => {
         const config = step.config || {}
         const position = config.position || { x: 100 + nodes.length * 200, y: 100 }
 
@@ -401,7 +537,38 @@ export const clientFlowService = {
 
   async createFlow(flowData: Partial<Flow>): Promise<Flow> {
     try {
+      // Si Supabase no está disponible, simular creación
+      if (!isSupabaseAvailable()) {
+        console.log("Simulando creación de flujo en modo demo")
+        const newFlow: Flow = {
+          id: `demo-${Date.now()}`,
+          name: flowData.name || "Nuevo Flujo",
+          type: flowData.type || "kyc_verification",
+          status: flowData.status || "draft",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_edited: new Date().toISOString(),
+          description: flowData.description || "Flujo creado en modo demo"
+        }
+        return newFlow
+      }
+
       const supabase = createClientSupabaseClient()
+      if (!supabase) {
+        console.log("Simulando creación de flujo en modo demo")
+        const newFlow: Flow = {
+          id: `demo-${Date.now()}`,
+          name: flowData.name || "Nuevo Flujo",
+          type: flowData.type || "kyc_verification",
+          status: flowData.status || "draft",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_edited: new Date().toISOString(),
+          description: flowData.description || "Flujo creado en modo demo"
+        }
+        return newFlow
+      }
+
       const now = new Date().toISOString()
 
       const newFlow = {
@@ -425,7 +592,38 @@ export const clientFlowService = {
     try {
       if (!id) throw new Error("ID de flujo requerido")
 
+      // Si Supabase no está disponible, simular actualización
+      if (!isSupabaseAvailable()) {
+        console.log("Simulando actualización de flujo en modo demo")
+        const updatedFlow: Flow = {
+          id,
+          name: flowData.name || "Flujo Actualizado",
+          type: flowData.type || "kyc_verification",
+          status: flowData.status || "active",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_edited: new Date().toISOString(),
+          description: flowData.description || "Flujo actualizado en modo demo"
+        }
+        return updatedFlow
+      }
+
       const supabase = createClientSupabaseClient()
+      if (!supabase) {
+        console.log("Simulando actualización de flujo en modo demo")
+        const updatedFlow: Flow = {
+          id,
+          name: flowData.name || "Flujo Actualizado",
+          type: flowData.type || "kyc_verification",
+          status: flowData.status || "active",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_edited: new Date().toISOString(),
+          description: flowData.description || "Flujo actualizado en modo demo"
+        }
+        return updatedFlow
+      }
+
       const now = new Date().toISOString()
 
       const updatedFlow = {
@@ -448,7 +646,17 @@ export const clientFlowService = {
     try {
       if (!flowId) throw new Error("ID de flujo requerido")
 
+      // Si Supabase no está disponible, simular guardado
+      if (!isSupabaseAvailable()) {
+        console.log("Simulando guardado de pasos del flujo en modo demo")
+        return { success: true }
+      }
+
       const supabase = createClientSupabaseClient()
+      if (!supabase) {
+        console.log("Simulando guardado de pasos del flujo en modo demo")
+        return { success: true }
+      }
 
       // Primero, eliminamos todos los pasos existentes para este flujo
       const { error: deleteError } = await supabase.from("flow_steps").delete().eq("flow_id", flowId)
@@ -521,7 +729,17 @@ export const clientFlowService = {
     try {
       if (!id) throw new Error("ID de flujo requerido")
 
+      // Si Supabase no está disponible, simular eliminación
+      if (!isSupabaseAvailable()) {
+        console.log("Simulando eliminación de flujo en modo demo")
+        return { success: true }
+      }
+
       const supabase = createClientSupabaseClient()
+      if (!supabase) {
+        console.log("Simulando eliminación de flujo en modo demo")
+        return { success: true }
+      }
 
       // Primero eliminamos los pasos asociados
       const { error: stepsError } = await supabase.from("flow_steps").delete().eq("flow_id", id)

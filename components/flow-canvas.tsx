@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import type { FlowNode, FlowConnection, Position, FlowValidationError } from "@/types/flow"
-import AutoArrangeDialog from "@/components/AutoArrangeDialog" // Import AutoArrangeDialog
+import AutoArrangeDialog from "@/components/auto-arrange-dialog" // Import AutoArrangeDialog
 
 interface FlowCanvasProps {
   onSelectBlock: (blockId: string | null) => void

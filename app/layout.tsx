@@ -1,14 +1,31 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Source_Serif_4 } from "next/font/google"
+import { JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { TopBar } from "@/components/top-bar"
 import { Sidebar } from "@/components/sidebar"
+import { BreadcrumbNav } from "@/components/breadcrumb-nav"
+import { StagewiseToolbar } from "@stagewise/toolbar-next"
+import ReactPlugin from "@stagewise-plugins/react"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: "--font-sans"
+})
+
+const sourceSerif = Source_Serif_4({ 
+  subsets: ["latin"],
+  variable: "--font-serif"
+})
+
+const jetbrainsMono = JetBrains_Mono({ 
+  subsets: ["latin"],
+  variable: "--font-mono"
+})
 
 export const metadata: Metadata = {
   title: "Onboarding Platform - Gestiona tus flujos de verificación",
@@ -24,18 +41,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" disableTransitionOnChange>
-          <div className="min-h-screen bg-background">
+          <div className="layout-full-height bg-background">
             <TopBar />
-            <div className="flex">
+            <div className="main-container">
               <Sidebar />
-              <main className="flex-1 overflow-hidden">
-                <div className="h-[calc(100vh-4rem)] overflow-y-auto overflow-x-hidden">{children}</div>
+              <main className="main-content">
+                <BreadcrumbNav />
+                <div className="main-content-scroll">{children}</div>
               </main>
             </div>
           </div>
           <Toaster />
+          {process.env.NODE_ENV === 'development' && (
+            <StagewiseToolbar
+              config={{
+                plugins: [ReactPlugin]
+              }}
+            />
+          )}
         </ThemeProvider>
       </body>
     </html>

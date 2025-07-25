@@ -17,6 +17,7 @@ import {
   Plus,
   Activity,
   Briefcase,
+  Shield,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -66,6 +67,13 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     badge: "3",
   },
   {
+    name: "Aprobaciones",
+    href: "/aprobaciones",
+    icon: Shield,
+    description: "Casos KYC y KYB que requieren revisión manual",
+    badge: "4",
+  },
+  {
     name: "Métricas",
     href: "/metricas",
     icon: BarChart3,
@@ -112,7 +120,7 @@ export function Sidebar({ className }: SidebarProps) {
         key={item.name}
         href={item.href}
         className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground",
+          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground relative",
           isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground",
           isCollapsed && "justify-center px-2",
         )}
@@ -154,7 +162,7 @@ export function Sidebar({ className }: SidebarProps) {
     <TooltipProvider>
       <div
         className={cn(
-          "flex flex-col border-r bg-background transition-all duration-300",
+          "sidebar-container flex flex-col border-r bg-background transition-all duration-300",
           isCollapsed ? "w-16" : "w-64",
           className,
         )}
@@ -166,17 +174,17 @@ export function Sidebar({ className }: SidebarProps) {
             </div>
           )}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="h-8 w-8"
+            className="h-8 w-8 hover:bg-primary hover:text-primary-foreground transition-colors"
             aria-label={isCollapsed ? "Expandir sidebar" : "Contraer sidebar"}
           >
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-2 p-4">
+        <nav className="flex-1 space-y-2 p-4 overflow-y-auto">
           <div className="space-y-1">
             {!isCollapsed && (
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 px-1">Principal</p>

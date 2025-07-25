@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "../supabase"
+import { createServerSupabaseClient } from "@/lib/supabase"
 import type { PersonaData } from "./schemas"
 
 export interface ConsistencyCheckResult {

@@ -5,16 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { PageHeader } from "@/components/page-header"
 
 function ConectoresPageSkeleton() {
   return (
-    <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="space-y-4">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
+      <div className="flex items-center justify-between space-y-2">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96" />
+        <div className="flex items-center space-x-2">
+          <Skeleton className="h-9 w-32" />
+        </div>
       </div>
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <Skeleton className="h-4 w-96" />
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="h-48" />
         ))}
@@ -97,100 +100,84 @@ function ConectoresPageContent() {
       icon: "🏛️",
       lastSync: "Nunca",
     },
-    {
-      id: "ufe",
-      name: "UFE",
-      description: "Unidad de Fiscalización y Control",
-      status: "disconnected",
-      icon: "🔍",
-      lastSync: "Nunca",
-    },
-    {
-      id: "anses",
-      name: "ANSES",
-      description: "Administración Nacional de la Seguridad Social",
-      status: "disconnected",
-      icon: "🛡️",
-      lastSync: "Nunca",
-    },
   ]
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "connected":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-4 w-4 text-green-500" />
       case "error":
-        return <XCircle className="h-4 w-4 text-red-600" />
+        return <AlertCircle className="h-4 w-4 text-red-500" />
       case "disconnected":
-        return <AlertCircle className="h-4 w-4 text-gray-400" />
+        return <XCircle className="h-4 w-4 text-gray-400" />
       default:
-        return null
+        return <XCircle className="h-4 w-4 text-gray-400" />
     }
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "connected":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Conectado</Badge>
+        return <Badge variant="success">Conectado</Badge>
       case "error":
         return <Badge variant="destructive">Error</Badge>
       case "disconnected":
         return <Badge variant="secondary">Desconectado</Badge>
       default:
-        return null
+        return <Badge variant="outline">Desconocido</Badge>
     }
   }
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <PageHeader
-        title="Conectores e integraciones"
-        description="Gestiona las conexiones con servicios externos para potenciar tus flujos de onboarding"
-      >
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Agregar conector
-        </Button>
-      </PageHeader>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-4">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Conectores</h2>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm">
+            <Settings className="h-4 w-4 mr-2" />
+            Configuración
+          </Button>
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar conector
+          </Button>
+        </div>
+      </div>
+      <p className="text-muted-foreground">
+        Gestiona las integraciones y conectores externos para ampliar las capacidades de tu plataforma
+      </p>
 
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {conectores.map((conector) => (
-          <Card key={conector.id} className="transition-all hover:shadow-md">
-            <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{conector.icon}</div>
+          <Card key={conector.id} className="relative">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">{conector.icon}</span>
                   <div>
-                    <CardTitle className="text-lg">{conector.name}</CardTitle>
-                    <CardDescription className="text-sm">{conector.description}</CardDescription>
+                    <CardTitle className="text-base">{conector.name}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {conector.description}
+                    </CardDescription>
                   </div>
                 </div>
                 {getStatusIcon(conector.status)}
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-0">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Estado:</span>
+                <span className="text-xs text-muted-foreground">
+                  Última sincronización: {conector.lastSync}
+                </span>
                 {getStatusBadge(conector.status)}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Última sincronización:</span>
-                <span className="text-sm text-muted-foreground">{conector.lastSync}</span>
-              </div>
-              <div className="flex gap-2 pt-2">
+              <div className="mt-4 flex space-x-2">
                 <Button variant="outline" size="sm" className="flex-1">
-                  <Settings className="h-4 w-4 mr-2" />
                   Configurar
                 </Button>
-                {conector.status === "connected" ? (
-                  <Button variant="outline" size="sm" className="flex-1">
-                    Desconectar
-                  </Button>
-                ) : (
-                  <Button size="sm" className="flex-1">
-                    Conectar
-                  </Button>
-                )}
+                <Button variant="outline" size="sm">
+                  Probar
+                </Button>
               </div>
             </CardContent>
           </Card>
